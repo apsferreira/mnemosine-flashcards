@@ -2,7 +2,13 @@
 
 > Study less, retain more — powered by **FSRS-6**, the algorithm behind Anki.
 
-Mnemosine is an open-source spaced repetition system (SRS) built as a learning project exploring TypeScript, React, NestJS, and Flutter.
+## Motivation
+
+I've been using **Anki** for years to study — it's the gold standard for spaced repetition. But when I went to download the iOS app from the App Store, I found it costs **$34.99**. The Android app is free. The desktop app is free. Just not iOS.
+
+That felt wrong. So I built my own.
+
+Mnemosine uses the same scheduling algorithm (FSRS-6) that Anki adopted in 2023, is fully open-source, and works across web, mobile, and eventually offline. It started as a tool to prepare for my master's thesis defense and grew into a learning project exploring TypeScript, React, NestJS, and Flutter.
 
 ## Why FSRS-6?
 
