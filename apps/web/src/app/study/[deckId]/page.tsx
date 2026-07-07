@@ -85,7 +85,7 @@ export default function StudyPage() {
   }
 
   if (isError) {
-    return <p className="text-red-500 text-sm text-center py-8">Erro ao carregar cards.</p>;
+    return <p className="text-red-500 text-sm text-center py-8">Failed to load cards.</p>;
   }
 
   // Session complete
@@ -96,13 +96,13 @@ export default function StudyPage() {
     return (
       <div className="flex flex-col items-center gap-6 py-16 text-center">
         <div className="text-5xl">✓</div>
-        <h2 className="text-xl font-bold text-gray-900">Sessão concluída!</h2>
+        <h2 className="text-xl font-bold text-gray-900">Session complete!</h2>
         <div className="grid grid-cols-2 gap-4 w-full max-w-xs">
           {[
-            { label: 'Revistos', value: sessionStats.reviewed },
-            { label: 'Retido', value: `${retention}%` },
-            { label: 'Novamente', value: sessionStats.again },
-            { label: 'Fácil', value: sessionStats.easy },
+            { label: 'Reviewed', value: sessionStats.reviewed },
+            { label: 'Retained', value: `${retention}%` },
+            { label: 'Again', value: sessionStats.again },
+            { label: 'Easy', value: sessionStats.easy },
           ].map(({ label, value }) => (
             <div key={label} className="p-4 rounded-2xl border border-gray-200 bg-white">
               <p className="text-2xl font-bold text-indigo-500">{value}</p>
@@ -111,7 +111,7 @@ export default function StudyPage() {
           ))}
         </div>
         <button onClick={handleBack} className="px-6 py-3 bg-indigo-500 text-white rounded-xl font-semibold hover:bg-indigo-600 transition-colors">
-          Voltar
+          Back to decks
         </button>
       </div>
     );
@@ -120,9 +120,9 @@ export default function StudyPage() {
   if (currentCard === null) {
     return (
       <div className="flex flex-col items-center gap-4 py-16 text-center">
-        <h2 className="text-xl font-bold text-gray-900">Nada para revisar!</h2>
-        <p className="text-sm text-gray-400">Todos os cards estão em dia.</p>
-        <button onClick={handleBack} className="px-6 py-3 bg-indigo-500 text-white rounded-xl font-semibold">Voltar</button>
+        <h2 className="text-xl font-bold text-gray-900">All caught up!</h2>
+        <p className="text-sm text-gray-400">No cards due for this deck.</p>
+        <button onClick={handleBack} className="px-6 py-3 bg-indigo-500 text-white rounded-xl font-semibold">Back to decks</button>
       </div>
     );
   }
@@ -132,7 +132,7 @@ export default function StudyPage() {
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-center gap-4">
-        <button onClick={handleBack} className="text-sm text-gray-400 hover:text-gray-600">← Voltar</button>
+        <button onClick={handleBack} className="text-sm text-gray-400 hover:text-gray-600">← Back</button>
         <div className="flex-1">
           <ProgressBar completed={completedCards} total={Math.max(totalDueToday, completedCards + 1)} />
         </div>

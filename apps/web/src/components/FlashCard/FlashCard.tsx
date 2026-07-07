@@ -14,10 +14,10 @@ export function FlashCard({ card, revealed, onReveal }: FlashCardProps) {
     <div className="w-full">
       <article
         className="w-full min-h-64 rounded-2xl border border-gray-200 bg-white shadow-sm p-8 flex flex-col gap-4"
-        aria-label={revealed ? 'Card revelado' : 'Frente do card'}
+        aria-label={revealed ? 'Card revealed' : 'Card front'}
       >
         <span className="text-xs font-semibold text-gray-400 uppercase tracking-widest">
-          Pergunta
+          Question
         </span>
         <div className="prose prose-sm max-w-none text-gray-800 flex-1">
           <ReactMarkdown>{card.front}</ReactMarkdown>
@@ -28,14 +28,14 @@ export function FlashCard({ card, revealed, onReveal }: FlashCardProps) {
             onClick={onReveal}
             className="mt-4 w-full py-3 rounded-xl bg-indigo-500 text-white font-semibold hover:bg-indigo-600 transition-colors"
           >
-            Revelar resposta
-            <span className="ml-2 text-indigo-200 text-xs">Espaço</span>
+            Show answer
+            <span className="ml-2 text-indigo-200 text-xs">Space</span>
           </button>
         ) : (
           <>
             <hr className="border-gray-100" />
             <span className="text-xs font-semibold text-gray-400 uppercase tracking-widest">
-              Resposta
+              Answer
             </span>
             <div className="prose prose-sm max-w-none text-gray-800">
               <ReactMarkdown>{card.back}</ReactMarkdown>
