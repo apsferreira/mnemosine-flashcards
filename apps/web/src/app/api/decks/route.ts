@@ -1,26 +1,42 @@
 import { NextRequest, NextResponse } from 'next/server';
+import type { Deck } from '@mnemosine/core';
 
 /**
- * Next.js App Router — API Route handlers
+ * In-memory store — substituto do banco de dados para desenvolvimento.
  *
- * Each file in app/api/ exports HTTP method functions.
- * No separate server needed — this runs on Node.js inside Next.js.
+ * Por que funciona? No Next.js dev server, este módulo é carregado uma vez
+ * e mantido em memória entre requests (desde que o servidor não reinicie).
  *
- * Learning path:
- * 1. GET  /api/decks  → list all decks with due_cards count
- * 2. POST /api/decks  → create a new deck
+ * Em produção com banco real, este array vira:
+ *   const decks = await prisma.deck.findMany()
  *
- * TODO: connect to PostgreSQL using Prisma
- *   npm install prisma @prisma/client
- *   npx prisma init
- *   Then replace the stubs below with real DB calls.
+ * A INTERFACE da rota não muda — só a fonte dos dados.
  */
+const store: Deck[] = [
+  {
+    id: 'deck-1',
+    name: 'Defesa de Mestrado',
+    description: 'Conceitos para a defesa — VANTs, simulação, OGUM',
+    due_cards: 12,
+    total_cards: 45,
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: 'deck-2',
+    name: 'TypeScript',
+    description: 'Tipos, generics, utility types',
+    due_cards: 3,
+    total_cards: 20,
+    createdAt: new Date().toISOString(),
+  },
+];
 
-export async function GET(_req: NextRequest) {
-  // TODO: const decks = await prisma.deck.findMany({ include: { _count: { select: { cards: { where: { due: { lte: new Date() } } } } } } })
-  return NextResponse.json({ decks: [] });
+// GET /api/decks — retorna todos os decks
+export async function GET() {
+  return NextResponse.json({ decks: store });
 }
 
+// POST /api/decks — cria um novo deck
 export async function POST(req: NextRequest) {
   const body = await req.json() as { name?: string; description?: string };
 
@@ -28,6 +44,16 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'name is required' }, { status: 400 });
   }
 
-  // TODO: const deck = await prisma.deck.create({ data: { name: body.name, description: body.description } })
-  return NextResponse.json({ deck: null }, { status: 501 });
+  const deck: Deck = {
+    id: `deck-${Date.now()}`,           // em produção: UUID do banco
+    name: body.name.trim(),
+    description: body.description?.trim() ?? '',
+    due_cards: 0,
+    total_cards: 0,
+    createdAt: new Date().toISOString(),
+  };
+
+  store.push(deck);                      // em produção: prisma.deck.create()
+
+  return NextResponse.json({ deck }, { status: 201 });
 }
