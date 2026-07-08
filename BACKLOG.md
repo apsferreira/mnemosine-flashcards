@@ -1,125 +1,108 @@
 # Mnemosine — Backlog Guiado
 
 > Formato: cada task tem o OBJETIVO, os ARQUIVOS envolvidos, e a SEQUÊNCIA de passos.
-> Você implementa. Eu guio se travar.
+> **Você implementa. Eu guio se travar.**
 
 ---
 
 ## Como o projeto funciona (mapa mental)
 
 ```
-URL /                    → apps/web/src/app/page.tsx          (React)
-URL /study/[deckId]      → apps/web/src/app/study/[deckId]/page.tsx (React)
+URL /                       → apps/web/src/app/page.tsx                    (React)
+URL /decks/[deckId]         → apps/web/src/app/decks/[deckId]/page.tsx     (React)
+URL /study/[deckId]         → apps/web/src/app/study/[deckId]/page.tsx     (React)
 
-React chama             → apps/web/src/services/decks.ts      (fetch wrapper)
-Fetch bate em           → apps/web/src/app/api/decks/route.ts (Node.js)
-API lê/escreve em       → apps/web/src/lib/store.ts           (memória hoje)
+React chama                 → apps/web/src/services/decks.ts               (fetch wrapper)
+                            → apps/web/src/services/cards.ts               (fetch wrapper)
+Fetch bate em               → apps/web/src/app/api/decks/route.ts          (Node.js)
+                            → apps/web/src/app/api/decks/[deckId]/route.ts
+                            → apps/web/src/app/api/decks/[deckId]/cards/route.ts
+API lê/escreve em           → apps/web/src/lib/store.ts                    (memória hoje)
 
-Tipos compartilhados    → packages/core/src/types.ts
-Algoritmo FSRS          → packages/core/src/fsrs.ts
+Tipos compartilhados        → packages/core/src/types.ts
+Algoritmo FSRS              → packages/core/src/fsrs.ts
 ```
 
 ---
 
-## EPIC 0 — Foundation
+## EPIC 0 — Foundation ✅ CONCLUÍDO
 
-### F-1 — Seed data em inglês
-**Objetivo:** trocar o conteúdo dos cards de seed para inglês (para a entrevista)
-
+### F-1 — Seed data em inglês ✅
 **Arquivo:** `apps/web/src/lib/store.ts`
+Cards e decks traduzidos para inglês.
 
-**O que fazer:**
-1. Abra o arquivo
-2. Encontre o array `cards`
-3. Troque `front` e `back` de cada card para inglês
-4. Mantenha a estrutura — só mude o texto
+### F-2 — Criar cards via UI ✅
+**Arquivos criados:**
+- `apps/web/src/app/api/decks/[deckId]/cards/route.ts` — GET + POST
+- `apps/web/src/services/cards.ts` — listCards, createCard
+- `apps/web/src/app/decks/[deckId]/page.tsx` — página de gerenciamento
+- `apps/web/src/app/page.tsx` — botão "Manage" adicionado em cada deck
 
-**Exemplo de card atual:**
-```ts
-front: 'O que é o algoritmo FSRS-6?',
-back: 'Free Spaced Repetition Scheduler v6...',
-```
-
-**Como deve ficar:**
-```ts
-front: 'What is the FSRS-6 algorithm?',
-back: 'Free Spaced Repetition Scheduler v6. Tracks two variables per card — Stability (S) and Difficulty (D) — to compute the ideal review interval.',
-```
-
-**Critério de done:** rodar o projeto e ver os cards em inglês na sessão de estudo.
+**Fluxo:** Home → Manage → lista cards do deck → "+ Add card" → modal com front/back → POST cria card → lista atualiza
 
 ---
 
-### F-2 — Criar cards via UI
-**Objetivo:** poder adicionar cards novos a um deck existente
+## EPIC 1 — CRUD completo de cards
 
-**Por que importa:** hoje os decks existem mas estão "vazios" para o usuário — os cards são hardcoded. Sem isso, o projeto não tem uso real.
+### F-3 — Editar e deletar cards
+**Objetivo:** poder corrigir erros nos cards e remover cards desnecessários.
 
-**Arquivos que você vai criar/modificar:**
+**Arquivos a criar/modificar:**
 
 | Arquivo | O que fazer |
 |---------|-------------|
-| `apps/web/src/app/api/decks/[deckId]/cards/route.ts` | Criar — rota GET e POST |
-| `apps/web/src/services/cards.ts` | Criar — funções listCards, createCard |
-| `apps/web/src/app/decks/[deckId]/page.tsx` | Criar — página de gerenciamento |
-| `apps/web/src/app/page.tsx` | Modificar — adicionar botão "Manage" em cada deck |
+| `apps/web/src/app/api/decks/[deckId]/cards/[cardId]/route.ts` | Criar — PATCH e DELETE |
+| `apps/web/src/services/cards.ts` | Modificar — adicionar `updateCard`, `deleteCard` |
+| `apps/web/src/app/decks/[deckId]/page.tsx` | Modificar — botões Edit e Delete em cada card |
 
 **Sequência:**
 
 **Passo 1 — Rota de API**
-Crie `apps/web/src/app/api/decks/[deckId]/cards/route.ts`
 
-Modelo mental: é o mesmo padrão de `app/api/decks/route.ts`, mas filtrando por deckId.
-```
-GET  /api/decks/deck-1/cards → retorna todos os cards do deck-1
-POST /api/decks/deck-1/cards → cria um card novo no deck-1
-```
+Crie `apps/web/src/app/api/decks/[deckId]/cards/[cardId]/route.ts`.
 
-O `[deckId]` na pasta captura o valor da URL — o mesmo conceito de rotas dinâmicas.
+Modelo mental: idêntico a `api/decks/[deckId]/route.ts` — só troca `decks` por `cards`:
+```ts
+// PATCH /api/decks/:deckId/cards/:cardId
+export async function PATCH(req, { params }) {
+  const { cardId } = await params
+  const body = await req.json()  // { front?, back? }
+  // encontra card pelo id, atualiza campos, retorna { card }
+}
+
+// DELETE /api/decks/:deckId/cards/:cardId
+export async function DELETE(_, { params }) {
+  const { cardId } = await params
+  // remove card do array, retorna 204
+}
+```
 
 **Passo 2 — Service**
-Crie `apps/web/src/services/cards.ts`
 
-Modelo mental: igual `services/decks.ts`, mas para cards.
+Em `apps/web/src/services/cards.ts`, adicione:
 ```ts
-export const listCards = (deckId: string) => api.get(...)
-export const createCard = (deckId: string, body: {...}) => api.post(...)
+export const updateCard = (deckId: string, cardId: string, body: { front?: string; back?: string }) =>
+  api.patch<{ card: Card }>(`/decks/${deckId}/cards/${cardId}`, body).then((r) => r.card)
+
+export const deleteCard = (deckId: string, cardId: string) =>
+  api.delete(`/decks/${deckId}/cards/${cardId}`)
 ```
 
-**Passo 3 — Página de gerenciamento**
-Crie `apps/web/src/app/decks/[deckId]/page.tsx`
+**Passo 3 — UI**
 
-Essa página usa:
-- `useParams()` para pegar o deckId da URL
-- `useQuery` para listar os cards do deck
-- `useState` para controlar o modal de "Add card"
-- `useMutation` para criar o card
+Em `apps/web/src/app/decks/[deckId]/page.tsx`, replique o padrão do `page.tsx` da home:
+- `useState<Card | null>` para `editingCard`
+- `useState<string | null>` para `deletingCardId`
+- `useMutation` para updateMut e deleteMut
+- Modal de edição com textarea front + back
+- Modal de confirmação de delete
+- Botões Edit e Delete em cada card na lista
 
-**Passo 4 — Ligar a home**
-Em `apps/web/src/app/page.tsx`, adicione botão "Manage" em cada deck:
-```tsx
-<button onClick={() => router.push(`/decks/${deck.id}`)}>
-  Manage
-</button>
-```
-
-**Critério de done:** criar um deck, clicar em Manage, adicionar um card, clicar em Study, o card novo aparecer na sessão.
+**Critério de done:** abrir um deck, editar o front de um card, salvar, ver a mudança na lista. Deletar um card, ver sumir da lista.
 
 ---
 
-### F-3 — Editar e deletar cards
-**Objetivo:** completar o CRUD de cards
-
-**Arquivos:**
-- `apps/web/src/app/api/decks/[deckId]/cards/[cardId]/route.ts` — PATCH e DELETE
-- `apps/web/src/services/cards.ts` — adicionar `updateCard`, `deleteCard`
-- `apps/web/src/app/decks/[deckId]/page.tsx` — botões Edit e Delete em cada card
-
-**Padrão:** idêntico ao que você fez com decks em `page.tsx`. Reutilize o Modal.
-
----
-
-## EPIC 1 — Subjects (organização multi-assunto)
+## EPIC 2 — Subjects (organização multi-assunto)
 
 ### S-1 — Tipo Subject
 **Arquivo:** `packages/core/src/types.ts`
@@ -136,7 +119,7 @@ export interface Subject {
 
 E adicione `subjectId: string` no `Deck`.
 
-**Por que em `packages/core`?** Porque Subject é uma entidade de domínio — precisa ser conhecida pelo web app e pelo mobile.
+**Por que em `packages/core`?** Subject é uma entidade de domínio — precisa ser conhecida pelo web app e pelo mobile.
 
 ---
 
@@ -145,12 +128,12 @@ E adicione `subjectId: string` no `Deck`.
 - `apps/web/src/app/api/subjects/route.ts` — GET e POST
 - `apps/web/src/app/api/subjects/[subjectId]/route.ts` — PATCH e DELETE
 
-**Padrão:** igual ao que existe em `api/decks/`.
+Padrão: igual ao que existe em `api/decks/`.
 
-Adicione em `lib/store.ts`:
+Em `lib/store.ts`, adicione:
 ```ts
 export const subjects: Subject[] = [
-  { id: 'subject-1', name: 'Master Thesis', description: 'OGUM framework, VANTs, simulation', createdAt: ... },
+  { id: 'subject-1', name: 'Master Thesis', description: 'OGUM framework, UAVs, simulation', createdAt: ... },
   { id: 'subject-2', name: 'English', description: 'Vocabulary, phrasal verbs, grammar', createdAt: ... },
 ]
 ```
@@ -169,9 +152,7 @@ O formulário de criar Subject vai no lugar do de criar Deck.
 ### S-4 — Página de Subject
 **Arquivo a criar:** `apps/web/src/app/subjects/[subjectId]/page.tsx`
 
-Essa página é o que a home é hoje — lista os decks — mas filtrada por `subjectId`.
-
-Usa `useParams()` para pegar o `subjectId`. Busca `GET /api/subjects/[subjectId]/decks`.
+Lista os decks de um Subject. Usa `useParams()` para o `subjectId`. Busca `GET /api/subjects/[subjectId]/decks`.
 
 ---
 
@@ -184,55 +165,22 @@ const decksBySubject = decks.filter(d => d.subjectId === subjectId)
 
 ---
 
-## EPIC 2 — Banco de dados real
+## EPIC 3 — Banco de dados real
 
-### DB-1 — Prisma setup
+> Pré-requisito: K8s já tem `mnemosine-secret` com DATABASE_URL apontando para
+> `postgresql://postgres:***@192.168.30.121:5432/mnemosine` ✅
+
+### DB-1 — Rodar migrate local
 ```bash
 cd apps/web
-npm install prisma @prisma/client
-npx prisma init
+npx prisma migrate dev --name init
 ```
 
-Isso cria `prisma/schema.prisma`. Você vai definir Subject, Deck, Card como models.
+O schema já existe em `apps/web/prisma/schema.prisma` (Subject → Deck → Card com campos FSRS-6).
+Requer `shared-infra` rodando com banco `mnemosine` acessível.
 
-### DB-2 — Schema
-```prisma
-model Subject {
-  id          String   @id @default(cuid())
-  name        String
-  description String   @default("")
-  createdAt   DateTime @default(now())
-  decks       Deck[]
-}
-
-model Deck {
-  id          String   @id @default(cuid())
-  name        String
-  description String   @default("")
-  subject     Subject  @relation(fields: [subjectId], references: [id])
-  subjectId   String
-  createdAt   DateTime @default(now())
-  cards       Card[]
-}
-
-model Card {
-  id          String   @id @default(cuid())
-  front       String
-  back        String
-  state       Int      @default(0)
-  stability   Float?
-  difficulty  Float?
-  due         DateTime @default(now())
-  lastReview  DateTime?
-  lapses      Int      @default(0)
-  reps        Int      @default(0)
-  deck        Deck     @relation(fields: [deckId], references: [id])
-  deckId      String
-}
-```
-
-### DB-3 — Substituir lib/store.ts por Prisma
-Cada rota de API troca:
+### DB-2 — Substituir store.ts por Prisma
+Cada rota de API troca o array em memória por uma chamada Prisma:
 ```ts
 // antes
 const deck = decks.find(d => d.id === id)
@@ -241,33 +189,56 @@ const deck = decks.find(d => d.id === id)
 const deck = await prisma.deck.findUnique({ where: { id } })
 ```
 
-As rotas em si não mudam — só de onde vêm os dados.
+As rotas em si não mudam de assinatura — só de onde vêm os dados.
 
-### DB-4 — Docker Compose para dev
-Arquivo `docker-compose.yml` na raiz com Postgres. Você sobe com `docker compose up -d`.
+**Arquivos a modificar:** todas as rotas em `apps/web/src/app/api/`.
+
+### DB-3 — Adicionar Prisma Client ao projeto
+```bash
+cd apps/web
+npm install @prisma/client
+```
+
+Criar `apps/web/src/lib/db.ts`:
+```ts
+import { PrismaClient } from '@prisma/client'
+const globalForPrisma = globalThis as unknown as { prisma: PrismaClient }
+export const prisma = globalForPrisma.prisma ?? new PrismaClient()
+if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma
+```
 
 ---
 
-## EPIC 3 — Deploy
+## EPIC 4 — Deploy ✅ EM ANDAMENTO
 
-### D-1 — Dockerfile
-Next.js tem suporte oficial a Docker com `output: 'standalone'` no `next.config.ts`.
+### D-1 — Dockerfile ✅
+Multi-stage build com Node 22 + Next.js standalone + `outputFileTracingRoot` para monorepo.
 
-### D-2 — K8s manifest
-Deployment + Service + Ingress no K3s existente.
-Ingress aponta `flashcards.antoniopedro.com.br` para o Service.
+### D-2 — CI/CD ✅
+`.github/workflows/ci-cd.yml`: push main → build → push GHCR → atualiza tag em `k8s/deployment.yaml` → ArgoCD sync automático.
 
-### D-3 — DNS + SSL
-Subdomínio no seu DNS provider apontando para o IP do cluster.
-cert-manager já configurado no cluster cuida do SSL automaticamente.
+> **Status atual:** CI com falhas sendo corrigidas (build issue monorepo + standalone).
+
+### D-3 — K8s manifests ✅
+`k8s/`: namespace, deployment, service, IngressRoute (`flashcards.antoniopedro.com.br`), ArgoCD app.
+
+### D-4 — Cloudflare Tunnel + DNS ✅
+- Rota `flashcards.antoniopedro.com.br` adicionada no tunnel (VM 501, 192.168.40.10)
+- CNAME DNS criado: `flashcards.antoniopedro.com.br → acca3f04-...cfargotunnel.com`
+- Secret K8s `mnemosine-secret` criado no namespace `mnemosine`
+- App ArgoCD `mnemosine-flashcards` registrado
+
+### D-5 — Corrigir CI e verificar deploy ⏳ EM ANDAMENTO
+O CI está falhando no build do Docker por problema de monorepo standalone.
+Quando o CI ficar verde, o ArgoCD detecta e faz deploy automaticamente.
 
 ---
 
 ## Ordem recomendada
 
 ```
-F-1 → F-2 → F-3   (você tem um CRUD completo, pode mostrar na entrevista)
-S-1 → S-2 → S-3 → S-4 → S-5   (organização real por assunto)
-DB-1 → DB-2 → DB-3 → DB-4   (dados persistem)
-D-1 → D-2 → D-3   (online em flashcards.antoniopedro.com.br)
+F-3 (você implementa)          → CRUD completo de cards
+S-1 → S-5 (você implementa)   → organização por Subject
+DB-1 → DB-3 (você implementa) → dados persistem entre restarts
+D-5 (aguardando CI verde)      → app online em flashcards.antoniopedro.com.br
 ```
