@@ -1,12 +1,5 @@
 "use client";
 
-/**
- * Home page — deck list
- *
- * 'use client' is required here because this component uses hooks.
- * Without it, Next.js runs this on the server where hooks don't exist.
- */
-
 import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -20,46 +13,48 @@ type DeckForm = { name: string; description: string };
 
 const EMPTY_FORM: DeckForm = { name: "", description: "" };
 
+// ─── Icons ────────────────────────────────────────────────────────────────────
+
+function PencilIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+    </svg>
+  );
+}
+
+function TrashIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <polyline points="3 6 5 6 21 6" />
+      <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+      <path d="M10 11v6M14 11v6" />
+      <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+    </svg>
+  );
+}
+
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function HomePage() {
-  // useRouter — navigate between pages without a full browser reload.
-  // Equivalent to <Link> but usable inside event handlers.
   const router = useRouter();
-
-  // useQueryClient — gives us access to the query cache.
-  // We use it to mark data as stale (invalidate) so the list re-fetches
-  // after a create, update, or delete.
   const qc = useQueryClient();
 
-  // useState — three independent pieces of UI state:
-  //   showCreate  → whether the "New deck" modal is open
-  //   editingDeck → which deck is being edited (null = modal closed)
-  //   deletingId  → which deck the user is about to delete (null = no confirmation)
   const [showCreate, setShowCreate] = useState(false);
   const [editingDeck, setEditingDeck] = useState<Deck | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
-
-  // useState — controlled form for both create and edit modals.
-  // "Controlled" means the input value is always driven by React state,
-  // not stored in the DOM. onChange updates state → React re-renders → input shows new value.
   const [form, setForm] = useState<DeckForm>(EMPTY_FORM);
 
-  // useQuery — fetches data and manages loading/error/cache automatically.
-  // queryKey: ['decks'] is the cache identifier. invalidateQueries(['decks'])
-  // will trigger a refetch of exactly this query.
   const { data: decks = [], isLoading, isError } = useQuery({
     queryKey: ["decks"],
     queryFn: listDecks,
   });
 
-  // useMutation — for actions that change data (POST/PATCH/DELETE).
-  // Unlike useQuery, mutations don't run automatically — you call .mutate().
-  // onSuccess runs after the server responds OK.
   const createMut = useMutation({
     mutationFn: createDeck,
     onSuccess: () => {
-      void qc.invalidateQueries({ queryKey: ["decks"] }); // refresh the list
+      void qc.invalidateQueries({ queryKey: ["decks"] });
       closeCreate();
     },
   });
@@ -80,9 +75,6 @@ export default function HomePage() {
     },
   });
 
-  // useCallback — memoizes functions so they don't re-create on every render.
-  // This matters when you pass them as props to child components (like Modal's onClose),
-  // because a new function reference would cause an unnecessary re-render.
   const closeCreate = useCallback(() => {
     setShowCreate(false);
     setForm(EMPTY_FORM);
@@ -100,44 +92,55 @@ export default function HomePage() {
 
   // ─── Handlers ────────────────────────────────────────────────────────────────
 
-  function handleCreateSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault(); // prevent browser from reloading the page
+  function handleCreateSubmit() {
     if (form.name.trim()) createMut.mutate(form);
   }
 
-  function handleEditSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
+  function handleEditSubmit() {
     if (!editingDeck || !form.name.trim()) return;
     updateMut.mutate({ id: editingDeck.id, ...form });
   }
 
-  // ─── Shared form fields (used in both create and edit modals) ────────────────
+  // ─── Shared form fields ───────────────────────────────────────────────────────
 
   function DeckFormFields({ isPending }: { isPending: boolean }) {
     return (
       <>
-        <input
-          autoFocus
-          type="text"
-          placeholder="Deck name"
-          value={form.name}
-          onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-          className="px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:border-indigo-400"
-          required
-        />
-        <input
-          type="text"
-          placeholder="Description (optional)"
-          value={form.description}
-          onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
-          className="px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:border-indigo-400"
-        />
+        <div className="flex flex-col gap-1.5">
+          <label className="text-xs font-medium text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+            Name
+          </label>
+          <input
+            autoFocus
+            type="text"
+            placeholder="e.g. TypeScript, Biology, Economics"
+            value={form.name}
+            onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+            className="px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm text-slate-800 dark:text-slate-100 placeholder:text-slate-300 dark:placeholder:text-slate-500 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900/40 transition-colors"
+            required
+          />
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <label className="text-xs font-medium text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+            Description{" "}
+            <span className="normal-case font-normal text-slate-300 dark:text-slate-600">
+              (optional)
+            </span>
+          </label>
+          <input
+            type="text"
+            placeholder="What's this deck about?"
+            value={form.description}
+            onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
+            className="px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm text-slate-800 dark:text-slate-100 placeholder:text-slate-300 dark:placeholder:text-slate-500 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900/40 transition-colors"
+          />
+        </div>
         <button
           type="submit"
           disabled={isPending || !form.name.trim()}
-          className="w-full py-2 bg-indigo-500 text-white rounded-lg text-sm font-semibold disabled:opacity-50 hover:bg-indigo-600 transition-colors"
+          className="w-full py-2.5 bg-indigo-500 text-white rounded-xl text-sm font-semibold disabled:opacity-50 hover:bg-indigo-600 active:bg-indigo-700 transition-colors cursor-pointer"
         >
-          {isPending ? "Saving..." : "Save"}
+          {isPending ? "Saving…" : "Save"}
         </button>
       </>
     );
@@ -146,17 +149,21 @@ export default function HomePage() {
   // ─── Render ──────────────────────────────────────────────────────────────────
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-8">
 
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Mnemosine</h1>
-          <p className="text-sm text-gray-500">Your flashcard decks</p>
+          <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-50">
+            Mnemosine
+          </h1>
+          <p className="text-sm text-slate-400 dark:text-slate-500 mt-0.5">
+            Your flashcard decks
+          </p>
         </div>
         <button
           onClick={() => setShowCreate(true)}
-          className="px-4 py-2 bg-indigo-500 text-white rounded-xl text-sm font-semibold hover:bg-indigo-600 transition-colors"
+          className="px-4 py-2 bg-indigo-500 text-white rounded-xl text-sm font-semibold hover:bg-indigo-600 active:bg-indigo-700 transition-colors cursor-pointer shadow-sm shadow-indigo-200 dark:shadow-indigo-900/40"
         >
           + New deck
         </button>
@@ -164,38 +171,34 @@ export default function HomePage() {
 
       {/* Create modal */}
       <Modal open={showCreate} onClose={closeCreate} title="New deck">
-        <form onSubmit={handleCreateSubmit} className="flex flex-col gap-3">
+        <form action={handleCreateSubmit} className="flex flex-col gap-4">
           <DeckFormFields isPending={createMut.isPending} />
         </form>
       </Modal>
 
       {/* Edit modal */}
       <Modal open={!!editingDeck} onClose={closeEdit} title="Edit deck">
-        <form onSubmit={handleEditSubmit} className="flex flex-col gap-3">
+        <form action={handleEditSubmit} className="flex flex-col gap-4">
           <DeckFormFields isPending={updateMut.isPending} />
         </form>
       </Modal>
 
       {/* Delete confirmation modal */}
-      <Modal
-        open={!!deletingId}
-        onClose={() => setDeletingId(null)}
-        title="Delete deck?"
-      >
-        <p className="text-sm text-gray-500">
-          This will permanently delete the deck and all its cards. This cannot be undone.
+      <Modal open={!!deletingId} onClose={() => setDeletingId(null)} title="Delete deck?">
+        <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
+          This will permanently delete the deck and all its cards. This action cannot be undone.
         </p>
-        <div className="flex gap-2 mt-2">
+        <div className="flex gap-2 pt-1">
           <button
             onClick={() => deletingId && deleteMut.mutate(deletingId)}
             disabled={deleteMut.isPending}
-            className="flex-1 py-2 bg-red-500 text-white rounded-lg text-sm font-semibold disabled:opacity-50 hover:bg-red-600 transition-colors"
+            className="flex-1 py-2.5 bg-red-500 text-white rounded-xl text-sm font-semibold disabled:opacity-50 hover:bg-red-600 active:bg-red-700 transition-colors cursor-pointer"
           >
-            {deleteMut.isPending ? "Deleting..." : "Delete"}
+            {deleteMut.isPending ? "Deleting…" : "Delete"}
           </button>
           <button
             onClick={() => setDeletingId(null)}
-            className="px-4 py-2 border border-gray-200 rounded-lg text-sm text-gray-500 hover:bg-gray-50"
+            className="px-5 py-2.5 border border-slate-200 dark:border-slate-600 rounded-xl text-sm text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors cursor-pointer"
           >
             Cancel
           </button>
@@ -204,15 +207,25 @@ export default function HomePage() {
 
       {/* Loading / error / empty states */}
       {isLoading && (
-        <div className="flex justify-center py-12">
-          <div className="w-6 h-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+        <div className="flex justify-center py-16">
+          <div className="w-5 h-5 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin" />
         </div>
       )}
-      {isError && <p className="text-red-500 text-sm">Failed to load decks.</p>}
+      {isError && (
+        <p className="text-red-500 text-sm text-center py-4">Failed to load decks.</p>
+      )}
       {!isLoading && decks.length === 0 && (
-        <p className="text-gray-400 text-sm text-center py-8">
-          No decks yet. Create your first one above.
-        </p>
+        <div className="text-center py-16">
+          <p className="text-slate-400 dark:text-slate-500 text-sm">
+            No decks yet.{" "}
+            <button
+              onClick={() => setShowCreate(true)}
+              className="text-indigo-500 hover:text-indigo-600 font-medium cursor-pointer"
+            >
+              Create your first one.
+            </button>
+          </p>
+        </div>
       )}
 
       {/* Deck list */}
@@ -220,47 +233,58 @@ export default function HomePage() {
         {decks.map((deck: Deck) => (
           <div
             key={deck.id}
-            className="flex items-center justify-between p-4 rounded-2xl border border-gray-200 bg-white"
+            className="group relative flex items-center justify-between p-5 rounded-2xl bg-white dark:bg-slate-800/80 border border-slate-100 dark:border-slate-700/60 shadow-sm hover:shadow-md hover:border-indigo-100 dark:hover:border-indigo-800/60 transition-all duration-200"
           >
-            <div className="min-w-0">
-              <p className="font-semibold text-gray-900 truncate">{deck.name}</p>
+            {/* Left accent on hover */}
+            <div className="absolute left-0 top-5 bottom-5 w-0.5 rounded-full bg-indigo-400 opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
+
+            <div className="min-w-0 pl-1">
+              <div className="flex items-center gap-2">
+                <p className="font-semibold text-slate-800 dark:text-slate-100 truncate">
+                  {deck.name}
+                </p>
+                {deck.due_cards > 0 && (
+                  <span className="shrink-0 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400">
+                    {deck.due_cards} due
+                  </span>
+                )}
+              </div>
               {deck.description && (
-                <p className="text-xs text-gray-400 truncate">{deck.description}</p>
+                <p className="text-xs text-slate-400 dark:text-slate-500 truncate mt-0.5">
+                  {deck.description}
+                </p>
               )}
-              <p className="text-xs text-gray-400 mt-0.5">
-                {deck.total_cards} cards · {deck.due_cards} due today
+              <p className="text-xs text-slate-300 dark:text-slate-600 mt-1">
+                {deck.total_cards} {deck.total_cards === 1 ? "card" : "cards"}
               </p>
             </div>
 
-            <div className="flex items-center gap-2 ml-4 shrink-0">
-              {deck.due_cards > 0 && (
-                <span className="text-xs font-semibold text-indigo-500">
-                  {deck.due_cards} due
-                </span>
-              )}
+            <div className="flex items-center gap-1.5 ml-4 shrink-0">
               <button
                 onClick={() => router.push(`/study/${deck.id}`)}
-                className="px-3 py-1.5 bg-indigo-500 text-white rounded-lg text-xs font-semibold hover:bg-indigo-600 transition-colors"
+                className="px-4 py-2 bg-indigo-500 text-white rounded-xl text-xs font-semibold hover:bg-indigo-600 active:bg-indigo-700 transition-colors cursor-pointer shadow-sm shadow-indigo-100 dark:shadow-indigo-900/30"
               >
                 Study
               </button>
               <button
                 onClick={() => router.push(`/decks/${deck.id}`)}
-                className="px-3 py-1.5 border border-gray-200 rounded-lg text-xs text-gray-600 hover:bg-gray-50 transition-colors"
+                className="px-3 py-2 text-xs text-slate-500 dark:text-slate-400 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors cursor-pointer"
               >
                 Manage
               </button>
               <button
                 onClick={() => openEdit(deck)}
-                className="px-3 py-1.5 border border-gray-200 rounded-lg text-xs text-gray-600 hover:bg-gray-50 transition-colors"
+                className="w-8 h-8 flex items-center justify-center text-slate-300 dark:text-slate-600 rounded-lg hover:text-indigo-500 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 transition-colors cursor-pointer"
+                aria-label={`Edit ${deck.name}`}
               >
-                Edit
+                <PencilIcon />
               </button>
               <button
                 onClick={() => setDeletingId(deck.id)}
-                className="px-3 py-1.5 border border-red-200 rounded-lg text-xs text-red-500 hover:bg-red-50 transition-colors"
+                className="w-8 h-8 flex items-center justify-center text-slate-300 dark:text-slate-600 rounded-lg hover:text-red-400 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors cursor-pointer"
+                aria-label={`Delete ${deck.name}`}
               >
-                Delete
+                <TrashIcon />
               </button>
             </div>
           </div>
