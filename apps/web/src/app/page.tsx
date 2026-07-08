@@ -245,6 +245,12 @@ export default function HomePage() {
                 Study
               </button>
               <button
+                onClick={() => router.push(`/decks/${deck.id}`)}
+                className="px-3 py-1.5 border border-gray-200 rounded-lg text-xs text-gray-600 hover:bg-gray-50 transition-colors"
+              >
+                Manage
+              </button>
+              <button
                 onClick={() => openEdit(deck)}
                 className="px-3 py-1.5 border border-gray-200 rounded-lg text-xs text-gray-600 hover:bg-gray-50 transition-colors"
               >
