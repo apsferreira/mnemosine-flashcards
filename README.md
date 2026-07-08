@@ -2,6 +2,8 @@
 
 > Study less, retain more — powered by **FSRS-6**, the algorithm behind Anki.
 
+**Live:** [flashcards.antoniopedro.com.br](https://flashcards.antoniopedro.com.br) · ![CI/CD](https://github.com/apsferreira/mnemosine-flashcards/actions/workflows/ci-cd.yml/badge.svg)
+
 ## Motivation
 
 I've been using **Anki** for years to study. When I went to download the iOS app from the App Store, I found it costs **$34.99**. The Android app is free. The desktop app is free. Just not iOS.

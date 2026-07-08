@@ -1,0 +1,29 @@
+# =============================================================================
+# ArgoCD Application — Mnemosine Flashcards
+#
+# Aplicar UMA VEZ no cluster:
+#   kubectl apply -f k8s/argocd-app.yaml
+#
+# Depois disso: o ArgoCD monitora o repo e faz deploy automático
+# quando o CI/CD atualiza k8s/deployment.yaml com nova tag de imagem.
+# =============================================================================
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: mnemosine-flashcards
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/apsferreira/mnemosine-flashcards
+    targetRevision: main
+    path: k8s
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: mnemosine
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

@@ -1,0 +1,81 @@
+# =============================================================================
+# Deployment — Mnemosine Flashcards
+# Image atualizada automaticamente pelo CI/CD (GitHub Actions → ArgoCD)
+# =============================================================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mnemosine
+  namespace: mnemosine
+  labels:
+    app: mnemosine
+    app.kubernetes.io/name: mnemosine
+    app.kubernetes.io/managed-by: argocd
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mnemosine
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: mnemosine
+        app.kubernetes.io/name: mnemosine
+      annotations:
+        deploy-sha: "sha-0000000"
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1001
+        runAsGroup: 1001
+      containers:
+        - name: mnemosine
+          image: ghcr.io/apsferreira/mnemosine-flashcards:sha-0000000
+          imagePullPolicy: Always
+          ports:
+            - name: http
+              containerPort: 3000
+              protocol: TCP
+          env:
+            - name: NODE_ENV
+              value: production
+            - name: NEXT_TELEMETRY_DISABLED
+              value: "1"
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: mnemosine-secret
+                  key: database-url
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "128Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 20
+            periodSeconds: 30
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            failureThreshold: 3
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: false
+            capabilities:
+              drop:
+                - ALL

@@ -1,0 +1,68 @@
+// Prisma Schema — Mnemosine Flashcards
+//
+// Local dev:  DATABASE_URL em apps/web/.env.local
+//             postgresql://postgres:postgres@localhost:5432/mnemosine
+//
+// Produção:   DATABASE_URL em K8s Secret (mnemosine-secret)
+//             postgresql://postgres:<password>@192.168.30.121:5432/mnemosine
+//
+// Comandos:
+//   npx prisma migrate dev --name init    ← cria migração e aplica no banco local
+//   npx prisma studio                     ← abre UI para ver/editar dados
+//   npx prisma migrate deploy             ← aplica migrações em produção
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Subject ──────────────────────────────────────────────────────────────────
+// Agrupa decks por assunto. Ex: "Inglês", "Mestrado", "TypeScript"
+model Subject {
+  id          String   @id @default(cuid())
+  name        String
+  description String   @default("")
+  createdAt   DateTime @default(now())
+
+  decks       Deck[]
+}
+
+// ─── Deck ─────────────────────────────────────────────────────────────────────
+// Um deck pertence a um Subject e contém vários Cards
+model Deck {
+  id          String   @id @default(cuid())
+  name        String
+  description String   @default("")
+  createdAt   DateTime @default(now())
+
+  subject     Subject  @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  subjectId   String
+
+  cards       Card[]
+}
+
+// ─── Card ─────────────────────────────────────────────────────────────────────
+// Campos do algoritmo FSRS-6 (mesmos que packages/core/src/types.ts)
+model Card {
+  id          String    @id @default(cuid())
+  front       String
+  back        String
+
+  // FSRS-6 state
+  state       Int       @default(0)   // 0=New, 1=Learning, 2=Review, 3=Relearning
+  stability   Float?                  // dias até prob. de recall cair a ~90%
+  difficulty  Float?                  // dificuldade 1-10 deste card pra este usuário
+  due         DateTime  @default(now())
+  lastReview  DateTime?
+  lapses      Int       @default(0)
+  reps        Int       @default(0)
+
+  deck        Deck      @relation(fields: [deckId], references: [id], onDelete: Cascade)
+  deckId      String
+
+  createdAt   DateTime  @default(now())
+}

@@ -7,6 +7,12 @@ export const listDecks = () =>
 export const createDeck = (body: { name: string; description?: string }) =>
   api.post<{ deck: Deck }>('/decks', body).then((r) => r.deck);
 
+export const updateDeck = ({ id, ...body }: { id: string; name: string; description?: string }) =>
+  api.patch<{ deck: Deck }>(`/decks/${id}`, body).then((r) => r.deck);
+
+export const deleteDeck = (id: string) =>
+  api.delete(`/decks/${id}`);
+
 export const getNextCard = (deckId: string) =>
   api.get<{ card: Card | null }>(`/decks/${deckId}/next`).then((r) => r.card);
 
