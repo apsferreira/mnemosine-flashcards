@@ -27,7 +27,7 @@ spec:
         app: mnemosine
         app.kubernetes.io/name: mnemosine
       annotations:
-        deploy-sha: "sha-0000000"
+        deploy-sha: "sha-57f9f0c"
     spec:
       automountServiceAccountToken: false
       securityContext:
@@ -36,7 +36,7 @@ spec:
         runAsGroup: 1001
       containers:
         - name: mnemosine
-          image: ghcr.io/apsferreira/mnemosine-flashcards:sha-0000000
+          image: ghcr.io/apsferreira/mnemosine-flashcards:sha-57f9f0c
           imagePullPolicy: Always
           ports:
             - name: http
