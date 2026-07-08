@@ -1,10 +1,13 @@
 import type { NextConfig } from "next";
+import path from "path";
 
 const nextConfig: NextConfig = {
-  // standalone: cria um servidor Node.js mínimo e auto-contido para Docker.
-  // Sem isso, o container precisaria de node_modules inteiro (~500MB).
-  // Com isso: apenas os arquivos necessários são copiados (~50MB).
   output: "standalone",
+  // Required for standalone output in a monorepo — tells Next.js where the
+  // root node_modules lives so it traces and copies dependencies correctly.
+  experimental: {
+    outputFileTracingRoot: path.join(__dirname, "../../"),
+  },
 };
 
 export default nextConfig;
